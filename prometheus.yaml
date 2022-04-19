@@ -1,0 +1,65 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: main
+spec:
+  replicas: 1
+  serviceAccountName: prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      team: course
+  alerting:
+    alertmanagers:
+      - namespace: default
+        name: alertmanager
+        port: web
+  ruleSelector:
+    matchLabels:
+      team: course
+  scrapeInterval: 23s
+  additionalScrapeConfigs:
+    name: name-of-the-secret
+    key: mysecret
+  resources:
+    requests:
+      memory: 400Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+spec:
+  selector:
+    prometheus: main
+  ports:
+    - name: web
+      port: 9090
+      nodePort: 30090
+  type: NodePort
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prometheus
+  labels:
+    team: course
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: prometheus
+  endpoints:
+    - port: web
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: name-of-the-secret
+type: Opaque
+stringData:
+  mysecret: |
+    - job_name: blablabla
+      scrape_interval: 27s

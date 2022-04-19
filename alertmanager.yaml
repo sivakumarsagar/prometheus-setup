@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: main
+spec:
+  replicas: 1
+  resources:
+    requests:
+      memory: 400Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  labels:
+    app: alertmanager
+spec:
+  selector:
+    alertmanager: main
+  ports:
+    - name: web
+      port: 9093
+      nodePort: 30093
+  type: NodePort
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alertmanager
+  labels:
+    team: course
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: alertmanager
+  endpoints:
+    - port: web
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-main
+type: Opaque
+stringData:
+  alertmanager.yaml: |
+    global:
+      slack_api_url: https://hooks.slack.com/services/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
+
+    route:
+      group_by: ['alertname', 'job']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'slack.default'
+      routes:
+        - match:
+            foo: 'bar'
+          receiver: 'slack.else'
+
+    receivers:
+    - name: 'slack.default'
+      slack_configs:
+        - channel: '#prometheus'
+          icon_emoji: ':hear_no_evil:'
+          fields:
+            - title: '{{ .GroupLabels.job }}/{{ .GroupLabels.alertname }}'
+              value: '{{ .CommonAnnotations.summary }}'
+    - name: 'slack.else'
+      slack_configs:
+        - channel: '#prometheus'
+          icon_emoji: ':hear_no_evil:'
+          api_url: https://hooks.slack.com/services/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
+          fields:
+            - title: '{{ .GroupLabels.job }}/{{ .GroupLabels.alertname }}'
+              value: "{{ range .Alerts }} Hi, \n{{ .Annotations.summary }}  \n {{ .Annotations.description }} {{end}} "
