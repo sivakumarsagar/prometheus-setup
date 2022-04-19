@@ -1,0 +1,9 @@
+helm install stable-prom stable/prometheus-operator
+
+or
+
+helm install stable-prom stable/prometheus-operator --set prometheus.enabled=false --set alertmanager.enabled=false --set grafana.enabled=false --set grafana.enabled=false --set kube-state-metrics.podSecurityPolicy.enabled=false --set kube-state-metrics.podSecurityPolicy.enabled=false --set kube-state-metrics.podSecurityPolicyenabled=false --set kubeScheduler.enabled=false --set kubeStateMetrics.enabled=false --set kubelet.enabled=false --set nodeExporter.enabled=false
+
+
+#apply all files in git
+kubectl apply -f filesinmycurrentgit
